@@ -1,0 +1,15 @@
+---
+  - hosts: all
+    become: true
+    pre_tasks:
+    
+    - name: motd player
+      copy: 
+          content: "Ansible Managed by Hans Villasenor\n"
+          dest: /etc/motd
+
+  - hosts: all
+    become: true
+    roles:
+        - prometheus
+        - apache

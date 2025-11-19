@@ -1,0 +1,79 @@
+---
+
+- name: Install Prometheus on Ubuntu
+  tags: prometheus
+  apt:
+    name: prometheus
+    state: latest
+    update_cache: yes
+  when: ansible_os_family == "Debian"
+
+- name: Create Prometheus user on CentOS
+  tags: prometheus
+  user:
+    name: prometheus
+    shell: /sbin/nologin
+  when: ansible_os_family == "RedHat"
+
+- name: Download Prometheus tarball on CentOS
+  tags: prometheus
+  get_url:
+    url: https://github.com/prometheus/prometheus/releases/download/v2.45.0/prometheus-2.45.0.linux-amd64.tar.gz
+    dest: /tmp/prometheus.tar.gz
+  when: ansible_os_family == "RedHat"
+
+- name: Extract Prometheus on CentOS
+  tags: prometheus
+  unarchive:
+    src: /tmp/prometheus.tar.gz
+    dest: /opt/
+    remote_src: yes
+  when: ansible_os_family == "RedHat"
+
+- name: Move Prometheus binary to /usr/local/bin
+  tags: prometheus
+  copy:
+    remote_src: yes
+    src: /opt/prometheus-2.45.0.linux-amd64/prometheus
+    dest: /usr/local/bin/prometheus
+    mode: '0755'
+  when: ansible_os_family == "RedHat"
+
+- name: Create Prometheus config file
+  tags: prometheus
+  copy:
+    dest: /etc/prometheus.yml
+    content: |
+      global:
+        scrape_interval: 15s
+
+      scrape_configs:
+        - job_name: 'node_exporter'
+          static_configs:
+            - targets: ['192.168.56.101:9100', '192.168.56.104:9100']
+  when: ansible_os_family == "RedHat"
+
+- name: Create Prometheus systemd service
+  tags: prometheus
+  copy:
+    dest: /etc/systemd/system/prometheus.service
+    content: |
+      [Unit]
+      Description=Prometheus Monitoring
+      After=network.target
+
+      [Service]
+      User=prometheus
+      ExecStart=/usr/local/bin/prometheus --config.file=/etc/prometheus.yml
+
+      [Install]
+      WantedBy=multi-user.target
+  when: ansible_os_family == "RedHat"
+
+- name: Start Prometheus service
+  tags: prometheus
+  systemd:
+    name: prometheus
+    enabled: true
+    state: started
+  when: ansible_os_family == "RedHat"
