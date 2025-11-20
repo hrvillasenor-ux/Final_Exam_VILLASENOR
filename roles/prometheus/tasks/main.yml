@@ -6,7 +6,7 @@
     name: prometheus
     state: latest
     update_cache: yes
-  when: ansible_os_family == "Debian"
+  when: ansible_distribution == "Ubuntu"
 
 - name: Create Prometheus user on CentOS
   tags: prometheus
